@@ -1,36 +1,48 @@
+import:py from mtllm.llms {OpenAI}
+import:py from mtllm.llms {Ollama}
+
+glob llm = Ollama(model_name='smollm');
+# glob llm = OpenAI(model_name='gpt-4');
+import:jac from rag {RagEngine}
+glob rag_engine:RagEngine = RagEngine();
+node Session {
+    has id: str;
+    has chat_history: list[dict];
+    has status: int = 1;
+    can 'Respond to message using chat_history as context and agent_role as the goal of the agent'
+    llm_chat(
+        message:'current message':str,
+        chat_history: 'chat history':list[dict],
+        agent_role:'role of the agent responding':str,
+        context:'retrieved context from documents':list
+    ) -> 'response':str by llm();
+}
 walker interact {
-    can return_message with `root entry {
-        report {
-            "response": "Hello, world!"
-        };
-    }
-}
+    has message: str;
+    has session_id: str;
 
-walker interact_with_body {
-    has name: str;
+    can init_session with `root entry {
+         visit [-->](`?Session)(?id == self.session_id) else {
+            session_node = here ++> Session(id=self.session_id, chat_history=[], status=1);
+            print("Session Node Created");
 
-    can return_message with `root entry {
-        report {
-            "response": "Hello, " + self.name + "!"
-        };
+            visit session_node;
+        }
     }
-}
-walker addition {
-    has a:int;
-    has b:int;
+    can chat with Session entry {
+        here.chat_history.append({"role": "user", "content": self.message});
+        data = rag_engine.get_from_chroma(query=self.message);
+        print("generating");
 
-    can return_message with `root entry {
-        report {
-            "response": f"a+b={self.a+self.b}""!"
-        };
-    }
-}
-walker minus {
-    has a:int;
-    has b:int;
-    can return_message with `root entry {
-        report {
-            "response": f"a*b={self.a*self.b}""!"
-        };
+        response = here.llm_chat(
+            message=self.message,
+            chat_history=here.chat_history,
+            agent_role="You are a conversation agent designed to help users with their queries based on the documents provided",
+            context=data
+        );
+        print("generated");
+        here.chat_history.append({"role": "assistant", "content": response});
+
+        report {"response": response};
     }
 }
