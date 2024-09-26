@@ -1,8 +1,12 @@
 import:py from mtllm.llms {OpenAI}
 import:py from mtllm.llms {Ollama}
+# import:py from mtllm.llms {Anthropic}
 
-glob llm = Ollama(model_name='smollm');
-# glob llm = OpenAI(model_name='gpt-4');
+# glob llm = Ollama(model_name='smollm');
+
+# glob llm=mtllm.llms.Anthropic(model_name='Claude 3');
+
+glob llm = OpenAI(model_name='whisper-1');
 import:jac from rag {RagEngine}
 glob rag_engine:RagEngine = RagEngine();
 node Session {
