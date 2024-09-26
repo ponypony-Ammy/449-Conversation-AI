@@ -6,7 +6,9 @@ import:py from mtllm.llms {Ollama}
 
 # glob llm=mtllm.llms.Anthropic(model_name='Claude 3');
 
-glob llm = OpenAI(model_name='whisper-1');
+glob llm = OpenAI(model_name='gpt-4o-mini');
+glob llm = OpenAI(model_name='gpt-3.5-turbo');
+
 import:jac from rag {RagEngine}
 glob rag_engine:RagEngine = RagEngine();
 node Session {
