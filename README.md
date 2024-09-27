@@ -1,1 +1,2 @@
-# 449-Conversation-AI
+# EECS 449
+I learned to use the Jac language for development, and I find it incredibly useful, especially for integrating various components like large language models (LLMs), backend services, frontend interfaces, and even embeddings all in one place. The ease of connecting these parts together makes it a powerful tool. However, I still struggle with some aspects of Jac's grammar, particularly understanding the syntax like [-->], which seems to define node relationships or transitions in the graph but is not yet fully clear to me. Despite these challenges, I see great potential in mastering Jac for complex projects.
