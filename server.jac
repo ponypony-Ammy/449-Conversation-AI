@@ -5,16 +5,19 @@ import:py from mtllm.llms {Ollama}
 # glob llm = Ollama(model_name='smollm');
 
 glob llm = OpenAI(model_name='gpt-4o-mini');
-glob llm = OpenAI(model_name='gpt-4');
+# glob llm = OpenAI(model_name='gpt-4');
 
 # glob llm=mtllm.llms.Anthropic(model_name='Claude 3');
 enum ChatType {
     RAG : 'Need to use Retrievable information in specific documents to respond' = "RAG",
-    QA : 'Given context is enough for an answer' = "user_qa"
+    QA : 'Given context is enough for an answer' = "user_qa",
+    TC : 'Translate to Chinese' = "translate_chinese"
 }
+# TC is Translate to Chinese. It can be used to translate the prompt to Chinese so that the user doesn't need to specify the language each time.
 node Router {
     can 'route the query to the appropriate task type'
     classify(message:'query from the user to be routed.':str) -> ChatType by llm(method="Reason", temperature=0.0);
+    # Let the llm decide which chat node to route the query to.
 }
 node Chat {
     has chat_type: ChatType;
@@ -43,11 +46,15 @@ walker infer {
             router_node = here ++> Router();
             router_node ++> RagChat();
             router_node ++> QAChat();
+            router_node ++> TranslateChat();
             visit router_node;
         }
     }    
     can route with Router entry {
         classification = here.classify(message = self.message);
+        print("Classification:", classification);
+        print("Chat nodes:", [-->](`?Chat));
+
         visit [-->](`?Chat)(?chat_type==classification);
     }
 }
@@ -68,7 +75,20 @@ node RagChat :Chat: {
         print("responded");
     }
 }
+node TranslateChat :Chat: {
+    has chat_type: ChatType = ChatType.TC;
 
+    can respond with infer entry {
+        can 'Respond to message using chat_history as context and agent_role as the goal of the agent'
+        respond_with_llm(   message:'current message':str,
+            chat_history: 'chat history':list[dict],
+            agent_role:'role of the agent responding':str
+                ) -> 'response':str by llm();
+        print("Translate Chat");
+        here.response = respond_with_llm(here.message, here.chat_history, agent_role="You are a conversation agent designed to translate to Chinese");
+        print("Translate Chat Done");
+    }
+}
 node QAChat :Chat: {
     has chat_type: ChatType = ChatType.QA;
 
